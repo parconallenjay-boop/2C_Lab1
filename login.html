@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Nullspace // Secure access</title>
+	<meta name="description" content="Secure access to the Nullspace network." />
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+		:root {
+			--ink: #eaf6f1;
+			--muted: #81948f;
+			--line: rgba(184, 255, 230, 0.14);
+			--panel: rgba(10, 19, 20, 0.76);
+			--acid: #c8ff45;
+			--aqua: #75f5d2;
+			--warning: #ffae63;
+			--background: #071011;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			min-height: 100vh;
+			margin: 0;
+			overflow-x: hidden;
+			color: var(--ink);
+			background: var(--background);
+			font-family: 'Space Grotesk', sans-serif;
+		}
+
+		body::before {
+			position: fixed;
+			inset: 0;
+			z-index: -2;
+			content: '';
+			background:
+				radial-gradient(circle at 10% 10%, rgba(117, 245, 210, 0.1), transparent 30%),
+				radial-gradient(circle at 90% 90%, rgba(200, 255, 69, 0.07), transparent 27%),
+				linear-gradient(135deg, #071011 0%, #0a1416 45%, #071011 100%);
+		}
+
+		body::after {
+			position: fixed;
+			inset: 0;
+			z-index: -1;
+			pointer-events: none;
+			content: '';
+			opacity: 0.35;
+			background-image: linear-gradient(rgba(145, 255, 219, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(145, 255, 219, 0.035) 1px, transparent 1px);
+			background-size: 42px 42px;
+			mask-image: linear-gradient(to bottom, black, transparent 85%);
+		}
+
+		.page {
+			width: min(1240px, calc(100% - 64px));
+			min-height: 100vh;
+			margin: auto;
+			padding: 30px 0;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.topbar, .footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-family: 'DM Mono', monospace;
+			font-size: 11px;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+		}
+
+		.brand { display: flex; align-items: center; gap: 11px; color: var(--ink); }
+		.brand-mark { color: var(--acid); font-size: 21px; line-height: 0; }
+		.brand strong { font-size: 12px; font-weight: 500; letter-spacing: 0.22em; }
+		.top-status { color: var(--muted); }
+		.top-status span { color: var(--aqua); }
+
+		main {
+			flex: 1;
+			display: grid;
+			grid-template-columns: 0.95fr 1.05fr;
+			align-items: center;
+			gap: clamp(50px, 8vw, 136px);
+			padding: clamp(55px, 9vh, 110px) 0 70px;
+		}
+
+		.intro { position: relative; max-width: 480px; }
+		.eyebrow { margin: 0 0 25px; color: var(--acid); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; }
+		h1 { margin: 0; max-width: 520px; font-size: clamp(45px, 6vw, 82px); line-height: 0.93; letter-spacing: -0.065em; font-weight: 600; }
+		h1 em { color: var(--aqua); font-style: normal; }
+		.lede { max-width: 390px; margin: 28px 0 42px; color: var(--muted); font-size: 15px; line-height: 1.7; }
+
+		.terminal {
+			width: min(100%, 440px);
+			border: 1px solid var(--line);
+			background: rgba(5, 13, 14, 0.55);
+			box-shadow: 16px 16px 0 rgba(0, 0, 0, 0.14);
+		}
+		.terminal-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--muted); font: 10px 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+		.traffic { display: flex; gap: 6px; }
+		.traffic i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); opacity: 0.7; }
+		.traffic i:first-child { background: var(--warning); }
+		.terminal-body { padding: 21px 18px 23px; color: #a8c1bb; font: 12px/2 'DM Mono', monospace; }
+		.terminal-line { display: block; }
+		.terminal-line::before { margin-right: 10px; color: var(--acid); content: '>'; }
+		.terminal-line.dim { color: #58736c; }
+		.terminal-line.dim::before { color: #3d5d55; }
+		.terminal-line b { color: var(--aqua); font-weight: 400; }
+		.cursor { display: inline-block; width: 7px; height: 13px; margin-left: 4px; vertical-align: -2px; background: var(--acid); animation: blink 1s steps(2, jump-none) infinite; }
+		@keyframes blink { 50% { opacity: 0; } }
+
+		.login-card { width: min(100%, 465px); justify-self: end; padding: clamp(29px, 5vw, 48px); border: 1px solid rgba(184, 255, 230, 0.17); background: var(--panel); box-shadow: 0 26px 70px rgba(0, 0, 0, 0.26); backdrop-filter: blur(15px); }
+		.card-kicker { display: flex; align-items: center; justify-content: space-between; margin-bottom: 37px; color: var(--muted); font: 10px 'DM Mono', monospace; letter-spacing: 0.13em; text-transform: uppercase; }
+		.lock { color: var(--acid); font-size: 16px; }
+		h2 { margin: 0 0 9px; font-size: 29px; letter-spacing: -0.045em; font-weight: 500; }
+		.subheading { margin: 0 0 32px; color: var(--muted); font-size: 13px; }
+		.field { margin-bottom: 20px; }
+		label { display: block; margin-bottom: 9px; color: #9fb3ae; font: 10px 'DM Mono', monospace; letter-spacing: 0.13em; text-transform: uppercase; }
+		.input-wrap { position: relative; }
+		input { width: 100%; height: 51px; padding: 0 15px; border: 1px solid rgba(184, 255, 230, 0.16); border-radius: 0; outline: none; color: var(--ink); background: rgba(4, 11, 12, 0.62); font: 13px 'DM Mono', monospace; transition: border-color 160ms, box-shadow 160ms; }
+		input::placeholder { color: #425a55; }
+		input:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(117, 245, 210, 0.1); }
+		.password-input { padding-right: 53px; }
+		.show-password { position: absolute; top: 50%; right: 14px; padding: 4px; border: 0; color: var(--muted); background: none; cursor: pointer; transform: translateY(-50%); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+		.show-password:hover { color: var(--aqua); }
+		.form-row { display: flex; align-items: center; justify-content: space-between; margin: 5px 0 28px; font: 11px 'DM Mono', monospace; }
+		.remember { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; }
+		.remember input { width: 13px; height: 13px; accent-color: var(--acid); }
+		a { color: var(--aqua); text-decoration: none; }
+		a:hover { color: var(--acid); }
+		.submit { width: 100%; height: 53px; border: 1px solid var(--acid); color: #152000; background: var(--acid); cursor: pointer; font: 600 12px 'DM Mono', monospace; letter-spacing: 0.11em; text-transform: uppercase; transition: background 160ms, color 160ms, transform 160ms; }
+		.submit:hover { color: var(--acid); background: transparent; }
+		.submit:active { transform: translateY(2px); }
+		.form-note { min-height: 17px; margin: 17px 0 0; color: var(--muted); font: 10px 'DM Mono', monospace; text-align: center; }
+		.form-note.success { color: var(--aqua); }
+		.footer { padding-top: 20px; color: #536761; }
+		.footer span:last-child { color: #789087; }
+
+		@media (max-width: 800px) {
+			.page { width: min(100% - 38px, 550px); }
+			main { grid-template-columns: 1fr; gap: 54px; padding-top: 75px; }
+			.login-card { justify-self: stretch; }
+			.intro { max-width: none; }
+			.lede { margin-bottom: 30px; }
+			.terminal { width: 100%; }
+		}
+		@media (max-width: 420px) {
+			.page { width: calc(100% - 28px); padding-top: 22px; }
+			.top-status { display: none; }
+			main { padding-top: 63px; }
+			h1 { font-size: 49px; }
+			.login-card { padding: 28px 22px; }
+			.footer { font-size: 9px; }
+		}
+	</style>
+</head>
+<body>
+	<div class="page">
+		<header class="topbar">
+			<div class="brand"><span class="brand-mark">⌁</span><strong>NULLSPACE</strong></div>
+			<div class="top-status"><span>●</span>&nbsp; all systems operational</div>
+		</header>
+
+		<main>
+			<section class="intro" aria-labelledby="page-title">
+				<p class="eyebrow">[ private network / 07 ]</p>
+				<h1 id="page-title">Stay<br /><em>unseen.</em></h1>
+				<p class="lede">A quiet place for loud ideas. Access your encrypted workspace, built for people who prefer the signal over the noise.</p>
+				<div class="terminal" aria-label="System status">
+					<div class="terminal-head"><span>sys://nullspace</span><span class="traffic"><i></i><i></i><i></i></span></div>
+					<div class="terminal-body">
+						<span class="terminal-line">initializing secure channel...</span>
+						<span class="terminal-line">identity layer: <b>ready</b></span>
+						<span class="terminal-line">encryption: <b>aes-256-gcm</b></span>
+						<span class="terminal-line dim">no traces found<span class="cursor"></span></span>
+					</div>
+				</div>
+			</section>
+
+			<section class="login-card" aria-labelledby="login-title">
+				<div class="card-kicker"><span>access portal</span><span class="lock">⌑</span></div>
+				<h2 id="login-title">Welcome back.</h2>
+				<p class="subheading">Enter your credentials to continue.</p>
+				<form id="login-form">
+					<div class="field">
+						<label for="email">Identity / email</label>
+						<input id="email" name="email" type="email" placeholder="you@domain.com" autocomplete="email" required />
+					</div>
+					<div class="field">
+						<label for="password">Passphrase</label>
+						<div class="input-wrap">
+							<input class="password-input" id="password" name="password" type="password" placeholder="••••••••••••" autocomplete="current-password" required />
+							<button class="show-password" type="button" id="toggle-password" aria-label="Show password">view</button>
+						</div>
+					</div>
+					<div class="form-row">
+						<label class="remember"><input type="checkbox" name="remember" /> keep me hidden</label>
+						<a href="#recovery">forgot passphrase?</a>
+					</div>
+					<button class="submit" type="submit">Enter the network <span aria-hidden="true">↗</span></button>
+					<p class="form-note" id="form-note" role="status">protected by zero-knowledge architecture</p>
+				</form>
+			</section>
+		</main>
+
+		<footer class="footer"><span>© 2024 nullspace inc.</span><span>v.04.17 // encrypted</span></footer>
+	</div>
+
+	<script>
+		const password = document.querySelector('#password');
+		const togglePassword = document.querySelector('#toggle-password');
+		const form = document.querySelector('#login-form');
+		const note = document.querySelector('#form-note');
+
+		togglePassword.addEventListener('click', () => {
+			const isHidden = password.type === 'password';
+			password.type = isHidden ? 'text' : 'password';
+			togglePassword.textContent = isHidden ? 'hide' : 'view';
+			togglePassword.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+		});
+
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			note.textContent = 'credentials received // opening secure channel...';
+			note.classList.add('success');
+		});
+	</script>
+</body>
+</html>
